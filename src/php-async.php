@@ -39,7 +39,6 @@ class runtimeTask {
 class runtime {
 	public static $obj;
 	private $asyncTasks;
-	private $finalTasks;
 
 	public static function init() {
 		self::$obj = new runtime();
@@ -54,19 +53,7 @@ class runtime {
 		return $task;
 	}
 
-	public static function callFinal(callable $f) {
-		$task = new runtimeTask($f);
-		runtime::$obj->finalTasks[] = &$task;
-		return $task;
-	}
-
 	private function process() {
-		if (is_array($this->finalTasks)) {
-			foreach ($this->finalTasks as $task) {
-				$task->run();
-			}
-		}
-
 		$setContentType = true;
 		$setContentEncoding = true;
 		$setContentLength = true;
