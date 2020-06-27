@@ -54,37 +54,41 @@ class runtime {
 	}
 
 	private function process() {
-		$setContentType = true;
-		$setContentEncoding = true;
-		$setContentLength = true;
-		foreach (headers_list() as $header) {
-			if (stripos($header, 'content-type') !== false) {
-				$setContentType = false;
-			}
-			if (stripos($header, 'content-encoding') !== false) {
-				$setContentEncoding = false;
-			}
-			if (stripos($header, 'content-length') !== false) {
-				$setContentLength = false;
-			}
+		$content = '';	
+        	$level = ob_get_level();
+        	for ($idx = 0; $idx < $level; $idx++) {
+            		$content .= ob_get_clean();
+        	}
+    		ob_start();
+		
+        	// buffer all upcoming output
+        	if(!ob_start("ob_gzhandler")){
+            		define('NO_GZ_BUFFER', true);
+            		ob_start();
+        	}
+        
+        	echo $content;
+        
+        	//Flush here before getting content length if ob_gzhandler was used.
+        	if(!defined('NO_GZ_BUFFER')){
+            		ob_end_flush();
+        	}
+        
+        	// get the size of the output
+        	$size = ob_get_length();
+        
+        	// send headers to tell the browser to close the connection
+        	header("Content-Length: $size");
+        	header('Connection: close');
+        
+        	// flush all output
+        	ob_end_flush();
+        	ob_flush();
+        	flush();
+        	if (session_id())
+        		session_write_close();
 		}
-		if ($setContentEncoding) {
-			header("Content-Encoding: none");
-		}
-		if ($setContentType) {
-			header('Content-Type: text/html');
-		}
-		if ($setContentLength) {
-			header("Content-Length: " . ob_get_length());
-		}
-		$level = ob_get_level();
-		for ($idx = 0; $idx < $level; $idx++) {
-			ob_end_flush();
-		}
-		ob_flush();
-		flush();
-		session_write_close();
-
+				
 		if ($this->asyncTasks) {
 			foreach ($this->asyncTasks as $task) {
 				$task->run();
